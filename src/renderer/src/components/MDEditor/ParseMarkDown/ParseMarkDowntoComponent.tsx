@@ -10,7 +10,6 @@ import {
   Header5,
   Header6,
   Images,
-  Links,
   OrderList,
   Paragraph,
   UnOrderList,
@@ -27,37 +26,18 @@ export const parseMarkdownToComponents = (text: string): React.ReactNode[] => {
   let ReadingCode = false
   let codeLang = ''
 
+  const flushLists = (index: number) => {
+    if (OrderListItems.length > 0) {
+      components.push(<OrderList key={`order-${index}`} items={OrderListItems} />)
+      OrderListItems = []
+    }
+    if (UnOrderListItems.length > 0) {
+      components.push(<UnOrderList key={`unorder-${index}`} items={UnOrderListItems} />)
+      UnOrderListItems = []
+    }
+  }
+
   lines.forEach((line, index) => {
-    if (line.startsWith(syntaxEnum.header1)) {
-      components.push(<Header1 key={`header1-${index}`} text={line} />)
-      return
-    }
-
-    if (line.startsWith(syntaxEnum.header2)) {
-      components.push(<Header2 key={`header2-${index}`} text={line} />)
-      return
-    }
-
-    if (line.startsWith(syntaxEnum.header3)) {
-      components.push(<Header3 key={`header2-${index}`} text={line} />)
-      return
-    }
-
-    if (line.startsWith(syntaxEnum.header4)) {
-      components.push(<Header4 key={`header2-${index}`} text={line} />)
-      return
-    }
-
-    if (line.startsWith(syntaxEnum.header5)) {
-      components.push(<Header5 key={`header2-${index}`} text={line} />)
-      return
-    }
-
-    if (line.startsWith(syntaxEnum.header6)) {
-      components.push(<Header6 key={`header2-${index}`} text={line} />)
-      return
-    }
-
     if (ReadingCode) {
       if (line.startsWith(syntaxEnum.code)) {
         components.push(
@@ -76,6 +56,7 @@ export const parseMarkdownToComponents = (text: string): React.ReactNode[] => {
     }
 
     if (line.startsWith(syntaxEnum.code)) {
+      flushLists(index)
       codeLang = line.substring(syntaxEnum.code.length).trim()
       BlockCodeItems.push(line)
       ReadingCode = true
@@ -83,32 +64,60 @@ export const parseMarkdownToComponents = (text: string): React.ReactNode[] => {
     }
 
     if (line.startsWith(syntaxEnum.blockQuote1) && !line.startsWith(syntaxEnum.blockQuote2)) {
+      flushLists(index)
       components.push(<BlockQuote1 key={`BlockQuote1-${index}`} text={line} />)
       return
     }
 
     if (line.startsWith(syntaxEnum.blockQuote2)) {
+      flushLists(index)
       components.push(<BlockQuote2 key={`BlockQuote2-${index}`} text={line} />)
       return
     }
 
-    if (line.startsWith(syntaxEnum.links)) {
-      const match = line.match(/\[([^\]]+)\]\(([^)]+)\)/)
+    if (line.startsWith(syntaxEnum.images)) {
+      flushLists(index)
+      const match = line.match(/!\[([^\]]+)\]\(([^)]+)\)/)
       if (match) {
         const [, linkText, linkUrl] = match
-        components.push(<Links key={`link-${index}`} text={linkText} links={linkUrl} />)
+        components.push(<Images key={`img-${index}`} text={linkText} links={linkUrl} />)
       }
       return
     }
 
-    if (line.startsWith(syntaxEnum.images)) {
-      const match = line.match(/!\[([^\]]+)\]\(([^)]+)\)/)
-      if (match) {
-        const [, linkText, linkUrl] = match
-        console.log(match)
+    if (line.startsWith(syntaxEnum.header1)) {
+      flushLists(index)
+      components.push(<Header1 key={`header1-${index}`} text={line} />)
+      return
+    }
 
-        components.push(<Images key={`img-${index}`} text={linkText} links={linkUrl} />)
-      }
+    if (line.startsWith(syntaxEnum.header2)) {
+      flushLists(index)
+      components.push(<Header2 key={`header2-${index}`} text={line} />)
+      return
+    }
+
+    if (line.startsWith(syntaxEnum.header3)) {
+      flushLists(index)
+      components.push(<Header3 key={`header2-${index}`} text={line} />)
+      return
+    }
+
+    if (line.startsWith(syntaxEnum.header4)) {
+      flushLists(index)
+      components.push(<Header4 key={`header2-${index}`} text={line} />)
+      return
+    }
+
+    if (line.startsWith(syntaxEnum.header5)) {
+      flushLists(index)
+      components.push(<Header5 key={`header2-${index}`} text={line} />)
+      return
+    }
+
+    if (line.startsWith(syntaxEnum.header6)) {
+      flushLists(index)
+      components.push(<Header6 key={`header2-${index}`} text={line} />)
       return
     }
 
@@ -117,25 +126,16 @@ export const parseMarkdownToComponents = (text: string): React.ReactNode[] => {
       return
     }
 
-    if (OrderListItems.length > 0) {
-      components.push(<OrderList key={`order-${index}`} items={OrderListItems} />)
-      OrderListItems = []
-    }
-
     if (line.startsWith(syntaxEnum.unorderList)) {
       UnOrderListItems.push(line)
       return
     }
 
-    if (UnOrderListItems.length > 0) {
-      components.push(<UnOrderList key={`unorder-${index}`} items={UnOrderListItems} />)
-      UnOrderListItems = []
-    }
-
+    flushLists(index)
     components.push(<Paragraph key={`paragraph-${index}`} text={line} />)
   })
 
-  console.log(components)
+  flushLists(lines.length)
 
   return components
 }

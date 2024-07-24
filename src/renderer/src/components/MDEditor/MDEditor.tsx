@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { mdToHTML } from './utils'
 import { useMDContext } from './MDContext'
 import { twMerge } from 'tailwind-merge'
 import { useConfigContext } from '../Config'
@@ -64,7 +63,7 @@ export const MDEditor = () => {
   }, [])
 
   useEffect(() => {
-    setHtmlValue(mdToHTML(mdValue))
+    setHtmlValue(mdValue)
     mdValueRef.current = mdValue
   }, [mdValue])
 
@@ -176,14 +175,13 @@ export const MDEditor = () => {
             left: `${divPosition.left}px`,
           }}
         />
-        {/* <div
-          ref={divRef}
-          className={twMerge(showTextArea ? 'w-[50%] overflow-y-auto' : 'w-full', 'space-y-1')}
-          dangerouslySetInnerHTML={{ __html: htmlValue }}
-        ></div> */}
         <MarkdownRenderer
           markdownText={mdValue}
-          className={twMerge(showTextArea ? 'w-[50%] overflow-y-auto' : 'w-full', 'space-y-1')}
+          className={twMerge(
+            showTextArea ? 'w-[50%] overflow-y-auto' : 'w-full',
+            'space-y-1',
+            'select-all',
+          )}
         />
         <div ref={bottomOfPanelRef}></div>
       </article>

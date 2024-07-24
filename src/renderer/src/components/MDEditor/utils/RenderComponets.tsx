@@ -87,7 +87,7 @@ export const OrderList = ({ items }: { items: string[] }) => {
     <ol className="list-decimal pl-12">
       {items.map((item, index) => (
         <li key={index} className="order">
-          {item.substring(syntaxEnum.orderList.length)}
+          {processText(item.substring(syntaxEnum.orderList.length))}
         </li>
       ))}
     </ol>
@@ -99,7 +99,7 @@ export const UnOrderList = ({ items }: { items: string[] }) => {
     <ul className="list-disc pl-12">
       {items.map((item, index) => (
         <li key={index} className="no-order">
-          {item.substring(syntaxEnum.unorderList.length)}
+          {processText(item.substring(syntaxEnum.unorderList.length))}
         </li>
       ))}
     </ul>
@@ -124,11 +124,9 @@ export const Links = ({ text, links }) => {
   }
 
   return (
-    <p className="p-1">
-      <a href={links} onClick={handleLinkClick} className="text-blue-500 underline">
-        {text}
-      </a>
-    </p>
+    <a href={links} onClick={handleLinkClick} className="text-blue-500 underline">
+      {text}
+    </a>
   )
 }
 
@@ -163,23 +161,100 @@ export const ItalicsBoldLetters = ({ text }: ComponentsProps) => {
 export const Paragraph = ({ text }: ComponentsProps) => {
   if (!text) return null
 
-  const parts = text.split(/(`[^`]+`|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g).filter(Boolean)
+  let renderedParts: (string | JSX.Element)[] = []
 
-  const renderedParts = parts.map((item, index) => {
-    if (item.startsWith('`') && item.endsWith('`')) {
-      return <LineCode key={index} text={item.slice(1, -1)} />
+  const matches = text.match(
+    /\[([^\]]+)\]\(([^)]+)\)|(\s+\+\s+)|(`[^`]+`|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g,
+  )
+
+  if (!matches) {
+    return <p className="p-1">{text}</p>
+  }
+
+  let lastIndex = 0
+  matches.forEach((match, index) => {
+    const startIndex = text.indexOf(match, lastIndex)
+    const beforeMatch = text.slice(lastIndex, startIndex)
+
+    if (beforeMatch) {
+      renderedParts.push(beforeMatch)
     }
-    if (item.startsWith('***') && item.endsWith('***')) {
-      return <ItalicsBoldLetters key={index} text={item.slice(3, -3)} />
+
+    if (match.startsWith('[')) {
+      const parts = match.match(/\[([^\]]+)\]\(([^)]+)\)/)
+      if (parts) {
+        renderedParts.push(
+          <Links key={`link-${parts[1]}-${index}`} text={parts[1]} links={parts[2]} />,
+        )
+      }
+    } else if (match.startsWith('`') && match.endsWith('`')) {
+      renderedParts.push(<LineCode key={`code-${index}`} text={match.slice(1, -1)} />)
+    } else if (match.startsWith('***') && match.endsWith('***')) {
+      renderedParts.push(
+        <ItalicsBoldLetters key={`italics-bold-${index}`} text={match.slice(3, -3)} />,
+      )
+    } else if (match.startsWith('**') && match.endsWith('**')) {
+      renderedParts.push(<BoldLetters key={`bold-${index}`} text={match.slice(2, -2)} />)
+    } else if (match.startsWith('*') && match.endsWith('*')) {
+      renderedParts.push(<ItalicsLetters key={`italics-${index}`} text={match.slice(1, -1)} />)
+    } else {
+      renderedParts.push(match)
     }
-    if (item.startsWith('**') && item.endsWith('**')) {
-      return <BoldLetters key={index} text={item.slice(2, -2)} />
-    }
-    if (item.startsWith('*') && item.endsWith('*')) {
-      return <ItalicsLetters key={index} text={item.slice(1, -1)} />
-    }
-    return item
+
+    lastIndex = startIndex + match.length
   })
 
+  if (lastIndex < text.length) {
+    renderedParts.push(text.slice(lastIndex))
+  }
+
   return <p className="p-1">{renderedParts}</p>
+}
+
+const processText = (text: string) => {
+  const matches = text.match(
+    /\[([^\]]+)\]\(([^)]+)\)|(`[^`]+`|\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|\*[^*]+\*)/g,
+  )
+  if (!matches) return text
+
+  let renderedParts: (string | JSX.Element)[] = []
+  let lastIndex = 0
+
+  matches.forEach((match, index) => {
+    const startIndex = text.indexOf(match, lastIndex)
+    const beforeMatch = text.slice(lastIndex, startIndex)
+
+    if (beforeMatch) {
+      renderedParts.push(beforeMatch)
+    }
+
+    if (match.startsWith('[')) {
+      const parts = match.match(/\[([^\]]+)\]\(([^)]+)\)/)
+      if (parts) {
+        renderedParts.push(
+          <Links key={`link-${parts[1]}-${index}`} text={parts[1]} links={parts[2]} />,
+        )
+      }
+    } else if (match.startsWith('`') && match.endsWith('`')) {
+      renderedParts.push(<LineCode key={`code-${index}`} text={match.slice(1, -1)} />)
+    } else if (match.startsWith('***') && match.endsWith('***')) {
+      renderedParts.push(
+        <ItalicsBoldLetters key={`italics-bold-${index}`} text={match.slice(3, -3)} />,
+      )
+    } else if (match.startsWith('**') && match.endsWith('**')) {
+      renderedParts.push(<BoldLetters key={`bold-${index}`} text={match.slice(2, -2)} />)
+    } else if (match.startsWith('*') && match.endsWith('*')) {
+      renderedParts.push(<ItalicsLetters key={`italics-${index}`} text={match.slice(1, -1)} />)
+    } else {
+      renderedParts.push(match)
+    }
+
+    lastIndex = startIndex + match.length
+  })
+
+  if (lastIndex < text.length) {
+    renderedParts.push(text.slice(lastIndex))
+  }
+
+  return renderedParts
 }
